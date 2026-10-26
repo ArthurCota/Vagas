@@ -1,0 +1,688 @@
+<title>Vagas na Gringa</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: painel de operação — coluna de perfil à esquerda, quadro de vagas à direita; empilha no celular */
+:root{
+  --bg:#eef1f6; --surface:#ffffff; --sunk:#f6f8fb; --ink:#131a28; --muted:#5a6479; --line:#d9dfe9;
+  --accent:#2747d4; --accent-soft:#e3e8fc; --accent-ink:#ffffff;
+  --signal:#e8a800; --signal-soft:#fff4d1;
+  --good:#17805a; --good-soft:#dcf2e8; --warn:#a86a00; --bad:#b03c35; --bad-soft:#f8e1df;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1119; --surface:#161c28; --sunk:#111621; --ink:#e6eaf2; --muted:#97a1b5; --line:#273043;
+  --accent:#7f97ff; --accent-soft:#1f2a4d; --accent-ink:#0d1119;
+  --signal:#f3c33f; --signal-soft:#3a3013;
+  --good:#4cc795; --good-soft:#143428; --warn:#e3a640; --bad:#ef7d74; --bad-soft:#3a1d1b;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1119; --surface:#161c28; --sunk:#111621; --ink:#e6eaf2; --muted:#97a1b5; --line:#273043;
+  --accent:#7f97ff; --accent-soft:#1f2a4d; --accent-ink:#0d1119;
+  --signal:#f3c33f; --signal-soft:#3a3013;
+  --good:#4cc795; --good-soft:#143428; --warn:#e3a640; --bad:#ef7d74; --bad-soft:#3a1d1b;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:20px}
+h1{font-family:var(--f-display);font-weight:800;font-size:clamp(28px,4vw,40px);letter-spacing:-.02em;line-height:1;margin:0;text-wrap:balance}
+h1 small{display:block;font-family:var(--f-mono);font-weight:400;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.runbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.runbar b{color:var(--ink);font-weight:500}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:1px}
+.dot.ok{background:var(--good)} .dot.run{background:var(--signal);animation:pulse 1.2s infinite} .dot.err{background:var(--bad)}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot.run{animation:none}}
+
+.grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:18px}
+@media (min-width:901px){.panel{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 16px)}}
+.panel h2,.board h2{font-family:var(--f-display);font-weight:600;font-size:19px;margin:0;letter-spacing:-.01em}
+.field{display:flex;flex-direction:column;gap:8px}
+.label{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+
+.drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:14px;background:var(--sunk);display:flex;gap:12px;align-items:center;cursor:pointer;transition:border-color .15s}
+.drop:hover,.drop.over{border-color:var(--accent)}
+.drop svg{flex:none;color:var(--accent)}
+.drop .t{font-weight:600;font-size:14px}
+.drop .s{font-size:12.5px;color:var(--muted)}
+.drop input{display:none}
+.cvfile{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px}
+.cvfile span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+textarea,input[type=text],select{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:110px;resize:vertical;font-family:var(--f-mono);font-size:12px;line-height:1.5}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;line-height:1.3}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible,.btn:focus-visible,.tab:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.addrow{display:flex;gap:6px}
+.addrow input{flex:1;min-width:0}
+
+.btn{font:inherit;font-size:14px;font-weight:600;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{font-size:12.5px;padding:6px 10px;font-weight:500}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--line)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.actions{display:flex;flex-direction:column;gap:8px}
+.msg{font-size:13px;margin:0;color:var(--muted);min-height:1em}
+.msg.ok{color:var(--good)} .msg.err{color:var(--bad)}
+
+.board{display:flex;flex-direction:column;gap:14px;min-width:0}
+.boardhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px}
+.tab{font:inherit;font-size:13.5px;padding:6px 12px;border-radius:7px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--ink);font-weight:600}
+.tab .n{font-family:var(--f-mono);font-size:11.5px;margin-left:4px;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px}
+.filters input{flex:1 1 200px;min-width:0}
+.filters select{flex:0 1 170px;width:auto}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.job{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:56px minmax(0,1fr);gap:4px 14px}
+.score{grid-row:span 3;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-mono);font-weight:500;font-size:17px;background:conic-gradient(var(--c) calc(var(--p)*1%), var(--line) 0);position:relative}
+.score::before{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--surface)}
+.score span{position:relative}
+.job h3{margin:0;font-size:16px;font-weight:600;line-height:1.3;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline}
+.badge-new{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--signal-soft);color:var(--ink);border:1px solid var(--signal);padding:1px 6px;border-radius:4px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:500}
+.tag{font-family:var(--f-mono);font-size:11.5px;padding:1px 7px;border-radius:4px;background:var(--sunk);border:1px solid var(--line);color:var(--muted)}
+.why{font-size:13.5px;margin:4px 0 0;color:var(--ink);max-width:75ch}
+.why .gap{color:var(--muted)}
+.jobfoot{grid-column:2;display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.jobfoot .spacer{flex:1}
+.found{font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+@media (max-width:520px){.job{grid-template-columns:44px minmax(0,1fr)}.score{width:44px;height:44px;font-size:14px}.score::before{inset:4px}.jobfoot{grid-column:1 / -1}}
+
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:28px 22px;display:flex;flex-direction:column;gap:10px}
+.empty h3{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0}
+.empty ol{margin:0;padding-left:20px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.notice{font-size:13px;padding:10px 12px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--line)}
+.notice.err{background:var(--bad-soft)}
+
+.proj{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.proj>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.proj>summary::-webkit-details-marker{display:none}
+.proj>summary .ico{flex:none;width:34px;height:34px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.proj>summary .st{min-width:0;flex:1}
+.proj>summary .eb{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.proj>summary .tt{font-family:var(--f-display);font-weight:600;font-size:17px;line-height:1.25;text-wrap:balance}
+.proj>summary .chev{flex:none;color:var(--muted);transition:transform .15s}
+.proj[open]>summary .chev{transform:rotate(180deg)}
+.projbody{padding:0 16px 16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 24px;border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:700px){.projbody{grid-template-columns:minmax(0,1fr)}}
+.projbody .full{grid-column:1 / -1}
+.projbody p{margin:0;max-width:75ch}
+.projbody h4{margin:0 0 8px;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.bars{display:flex;flex-direction:column;gap:5px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) 72px 26px;gap:8px;align-items:center;font-size:13px}
+.bar .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .tr{height:8px;border-radius:4px;background:var(--sunk);border:1px solid var(--line);overflow:hidden}
+.bar .tr i{display:block;height:100%;background:var(--good)}
+.bar.gap .tr i{background:var(--signal)}
+.bar .ct{font-family:var(--f-mono);font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend span::before{content:"";display:inline-block;width:10px;height:8px;border-radius:2px;margin-right:5px;background:var(--good)}
+.legend span.g::before{background:var(--signal)}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;counter-increment:s}
+.steps li::before{content:counter(s);width:26px;height:26px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.steps b{font-weight:600}
+.steps .wk{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);margin-left:6px}
+.steps p{font-size:13.5px;color:var(--muted)}
+.plain{margin:0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.projfoot{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:12px}
+.projfoot .found{flex:1}
+.projfoot .msg{flex-basis:100%}
+
+.viewswitch{display:flex;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;align-self:flex-start;max-width:100%;flex-wrap:wrap}
+.viewswitch button{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:7px;border:0;background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.viewswitch button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.viewswitch .n{font-family:var(--f-mono);font-size:11.5px;font-weight:400;opacity:.8}
+.divider{height:1px;background:var(--line);margin:2px 0}
+.panel h3.sub{font-family:var(--f-display);font-weight:600;font-size:17px;margin:0}
+.budget{font-family:var(--f-mono);font-size:12.5px;font-weight:500;color:var(--good);background:var(--good-soft);padding:1px 7px;border-radius:4px}
+.rv>summary .score{grid-row:auto;flex:none;width:44px;height:44px;font-size:14px}
+.rv>summary .score::before{inset:4px}
+.crit{display:flex;flex-direction:column;gap:12px}
+.crit .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}
+.crit .nm{font-weight:600;font-size:14px}
+.crit .cm{grid-column:1 / -1;font-size:13px;color:var(--muted);max-width:75ch}
+.pill{font-family:var(--f-mono);font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap;align-self:center}
+.pill.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.pill.atencao{background:var(--signal-soft);color:var(--warn);border-color:transparent}
+.pill.critico{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.copybox{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:8px}
+.copybox .btn{align-self:flex-start}
+.rw{display:flex;flex-direction:column;gap:10px}
+.rw .pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.rw .pair:last-child{border-bottom:0;padding-bottom:0}
+@media (max-width:700px){.rw .pair{grid-template-columns:minmax(0,1fr)}}
+.rw .old{font-size:13px;color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.rw .new{font-size:13.5px}
+.rw .new mark{background:var(--signal-soft);color:var(--ink);padding:0 2px;border-radius:3px}
+.ghform{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+@media (max-width:520px){.ghform{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1><small>Vagas internacionais · Remoto · Freelance</small>Vagas na Gringa</h1>
+    <div class="runbar" id="runbar">
+      <span><span class="dot" id="rundot"></span><span id="runtxt">Carregando…</span></span>
+      <span id="agendatxt"></span>
+    </div>
+  </header>
+
+  <div id="topnotice" class="notice" hidden></div>
+
+  <div class="grid">
+    <aside class="panel" aria-label="Perfil de busca">
+      <h2>Perfil de busca</h2>
+
+      <div class="field">
+        <span class="label">Currículo</span>
+        <label class="drop" id="drop" for="cvinput">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6"/><path d="m9 14 3-3 3 3"/></svg>
+          <span><span class="t">Subir currículo</span><br><span class="s">PDF, DOCX ou TXT · arraste ou clique</span></span>
+          <input type="file" id="cvinput" accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+        </label>
+        <div class="cvfile" id="cvfile" hidden><span id="cvname"></span><button class="btn ghost small" id="cvtoggle" type="button">Ver texto</button></div>
+        <textarea id="cvtext" hidden placeholder="O texto do currículo aparece aqui. Você também pode colar direto."></textarea>
+        <p class="msg" id="cvmsg"></p>
+      </div>
+
+      <div class="field">
+        <label class="label" for="cargos">Cargos que você quer</label>
+        <input type="text" id="cargos" value="Data Analyst, BI Analyst, Analytics Engineer, Data Engineer">
+        <p class="hint">Separe por vírgula. Em inglês acha mais vagas.</p>
+      </div>
+
+      <div class="field">
+        <span class="label">Países</span>
+        <div class="chips" id="paises" role="group" aria-label="Países"></div>
+        <div class="addrow"><input type="text" id="paisnovo" placeholder="Outro país…" aria-label="Adicionar outro país"><button class="btn small" id="paisadd" type="button">Adicionar</button></div>
+      </div>
+
+      <div class="field">
+        <span class="label">Modalidade</span>
+        <div class="chips" id="modalidades" role="group" aria-label="Modalidade"></div>
+      </div>
+
+      <div class="field">
+        <span class="label">Tipo de contrato</span>
+        <div class="chips" id="contratos" role="group" aria-label="Tipo de contrato"></div>
+      </div>
+
+      <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label class="label" for="senioridade">Nível</label>
+          <select id="senioridade"><option>Júnior</option><option selected>Júnior ou Pleno</option><option>Pleno</option><option>Pleno ou Sênior</option><option>Sênior</option></select></div>
+        <div class="field"><label class="label" for="ingles">Inglês</label>
+          <select id="ingles"><option>Básico</option><option selected>Intermediário</option><option>Avançado</option><option>Fluente</option></select></div>
+      </div>
+
+      <div class="field">
+        <span class="label">Onde procurar</span>
+        <div class="chips" id="sites" role="group" aria-label="Sites de vagas"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="buscar" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          Buscar vagas novas</button>
+        <button class="btn" id="comparar" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h11"/><path d="m12 4 3 3-3 3"/><path d="M20 17H9"/><path d="m12 14-3 3 3 3"/></svg>
+          Comparar currículo com as vagas</button>
+        <p class="hint">Buscar traz vagas novas. Comparar recalcula a nota das vagas que já estão aqui com o currículo salvo, sem buscar nada novo.</p>
+        <button class="btn ghost" id="salvar" type="button">Só salvar o perfil</button>
+        <p class="msg" id="savemsg"></p>
+      </div>
+
+      <div class="divider"></div>
+      <h3 class="sub">Projetos freelance</h3>
+      <p class="hint">Trabalhos pagos por projeto ou por hora, encontrados com base no mesmo currículo e nos cargos acima.</p>
+      <div class="field">
+        <span class="label">Plataformas</span>
+        <div class="chips" id="freelaSites" role="group" aria-label="Plataformas de freelance"></div>
+      </div>
+      <div class="field">
+        <span class="label">Forma de pagamento</span>
+        <div class="chips" id="freelaTipos" role="group" aria-label="Forma de pagamento"></div>
+      </div>
+      <div class="field">
+        <label class="label" for="freelaMin">Valor mínimo</label>
+        <select id="freelaMin"><option value="0">Qualquer valor</option><option value="100">US$ 100+ por projeto · US$ 15+/h</option><option value="300" selected>US$ 300+ por projeto · US$ 20+/h</option><option value="750">US$ 750+ por projeto · US$ 30+/h</option><option value="1500">US$ 1.500+ por projeto · US$ 40+/h</option></select>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="buscarFreela" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg>
+          Buscar projetos freelance</button>
+        <p class="msg" id="freelamsg"></p>
+      </div>
+    </aside>
+
+    <main class="board">
+      <div class="viewswitch" id="viewswitch" role="group" aria-label="O que mostrar">
+        <button type="button" data-v="vagas" aria-pressed="true">Vagas · CLT / PJ<span class="n" id="nvagas"></span></button>
+        <button type="button" data-v="freelas" aria-pressed="false">Projetos freelance<span class="n" id="nfreelas"></span></button>
+      </div>
+      <div class="boardhead">
+        <h2 id="boardtitle">Vagas encontradas</h2>
+        <div class="tabs" role="tablist" id="tabs"></div>
+      </div>
+      <details class="proj" id="proj" hidden>
+        <summary><span class="ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 8-4 4 4 4"/><path d="m16 8 4 4-4 4"/><path d="m13.5 5-3 14"/></svg></span><span class="st"><span class="eb">Projeto sugerido para o seu GitHub</span><br><span class="tt" id="projtitulo"></span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="projbody" id="projbody"></div>
+      </details>
+      <details class="proj rv" id="rv" hidden>
+        <summary><span class="score" id="rvscore" style="--p:0;--c:var(--muted)"><span id="rvnota"></span></span><span class="st"><span class="eb">Revisão do currículo · GitHub · LinkedIn</span><br><span class="tt" id="rvtitulo">Seu currículo para vagas de fora</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="projbody" id="rvbody"></div>
+      </details>
+      <div class="filters">
+        <input type="text" id="q" placeholder="Filtrar por cargo, empresa, país…" aria-label="Filtrar vagas">
+        <select id="minscore" aria-label="Nota mínima"><option value="0">Qualquer nota</option><option value="50">Nota 50+</option><option value="70">Nota 70+</option><option value="85">Nota 85+</option></select>
+        <select id="ordem" aria-label="Ordenar"><option value="nota">Maior nota</option><option value="recentes">Mais recentes</option></select>
+      </div>
+      <div class="list" id="list"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  const PAISES = ["Qualquer lugar (remoto global)","América Latina","Estados Unidos","Canadá","Reino Unido","Irlanda","Portugal","Espanha","Alemanha","Holanda","Europa (qualquer país)","Japão","Austrália"];
+  const MODALIDADES = ["Remoto (trabalhando do Brasil)","Híbrido","Presencial com visto/relocação"];
+  const CONTRATOS = ["Contractor / PJ (meu CNPJ)","Funcionário full-time"];
+  const SITES = ["LinkedIn","Glassdoor","Indeed","Remotive","Himalayas","We Work Remotely","Remote OK","Wellfound","Turing","Japan Dev / TokyoDev"];
+  const DEFAULTS = {
+    paises:["Qualquer lugar (remoto global)","Estados Unidos","Canadá","Europa (qualquer país)","Japão"],
+    modalidades:["Remoto (trabalhando do Brasil)"],
+    contratos:["Contractor / PJ (meu CNPJ)","Funcionário full-time"],
+    sites:SITES.slice()
+  };
+  const TABS = [["nova","Novas"],["salva","Salvas"],["aplicada","Aplicadas"],["descartada","Descartadas"]];
+  const FTABS = [["nova","Novos"],["salva","Salvos"],["proposta","Proposta enviada"],["descartada","Descartados"]];
+  const FREELA_SITES = ["Upwork","Freelancer.com","Workana","Contra","Guru","PeoplePerHour","Malt","99Freelas"];
+  const FREELA_TIPOS = ["Preço fixo","Por hora"];
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+  const PDFWK = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const MAMMOTH = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const st = { db:null, vagas:[], exec:null, agenda:null, tab:"nova", sel:{paises:new Set(DEFAULTS.paises), modalidades:new Set(DEFAULTS.modalidades), contratos:new Set(DEFAULTS.contratos), sites:new Set(DEFAULTS.sites), freelaSites:new Set(["Upwork","Freelancer.com","Workana","Contra","Guru","PeoplePerHour"]), freelaTipos:new Set(FREELA_TIPOS)}, view:"vagas", freelas:[], fexec:null, extraPaises:[], cvNome:"", dirty:false, loadedPerfil:false, readOnly:false };
+
+  // ---------- chips ----------
+  function renderChips(id, opts, key){
+    const box = document.getElementById(id);
+    box.innerHTML = opts.map(o => `<button type="button" class="chip" aria-pressed="${st.sel[key].has(o)}" data-v="${esc(o)}">${esc(o)}</button>`).join("");
+    box.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
+      const v = b.dataset.v; const s = st.sel[key];
+      s.has(v) ? s.delete(v) : s.add(v);
+      b.setAttribute("aria-pressed", s.has(v)); markDirty();
+    }));
+  }
+  function allPaises(){ const out = PAISES.slice(); st.extraPaises.forEach(p => { if(!out.includes(p)) out.push(p); }); st.sel.paises.forEach(p => { if(!out.includes(p)) out.push(p); }); return out; }
+  function renderAllChips(){
+    renderChips("paises", allPaises(), "paises");
+    renderChips("modalidades", MODALIDADES, "modalidades");
+    renderChips("contratos", CONTRATOS, "contratos");
+    renderChips("sites", SITES, "sites");
+    renderChips("freelaSites", FREELA_SITES, "freelaSites");
+    renderChips("freelaTipos", FREELA_TIPOS, "freelaTipos");
+  }
+  $("#freelaMin").addEventListener("change", markDirty);
+  $("#paisadd").addEventListener("click", addPais);
+  $("#paisnovo").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); addPais(); } });
+  function addPais(){ const v = $("#paisnovo").value.trim(); if(!v) return; st.extraPaises.push(v); st.sel.paises.add(v); $("#paisnovo").value = ""; renderChips("paises", allPaises(), "paises"); markDirty(); }
+  ["cargos","senioridade","ingles","cvtext"].forEach(id => document.getElementById(id).addEventListener("input", markDirty));
+  function markDirty(){ st.dirty = true; setMsg("#savemsg", "Alterações ainda não salvas.", ""); }
+
+  // ---------- currículo ----------
+  const drop = $("#drop");
+  ["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { const f = e.dataTransfer?.files?.[0]; if(f) lerArquivo(f); });
+  $("#cvinput").addEventListener("change", e => { const f = e.target.files?.[0]; if(f) lerArquivo(f); e.target.value = ""; });
+  $("#cvtoggle").addEventListener("click", () => { const t = $("#cvtext"); t.hidden = !t.hidden; $("#cvtoggle").textContent = t.hidden ? "Ver texto" : "Esconder texto"; });
+
+  function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("Não consegui carregar o leitor de arquivos.")); document.head.appendChild(s); }); }
+  async function lerPdf(buf){
+    if(!window.pdfjsLib){ await loadScript(PDFJS); await loadScript(PDFWK); }
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFWK;
+    const pdf = await window.pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise;
+    let out = [];
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i); const c = await page.getTextContent();
+      let line = "", lastY = null;
+      c.items.forEach(it => { const y = it.transform ? it.transform[5] : null; if(lastY !== null && y !== null && Math.abs(y - lastY) > 2){ out.push(line); line = ""; } line += it.str + (it.hasEOL ? "\n" : " "); lastY = y; });
+      out.push(line);
+    }
+    return out.join("\n");
+  }
+  async function lerDocx(buf){ if(!window.mammoth) await loadScript(MAMMOTH); const r = await window.mammoth.extractRawText({ arrayBuffer: buf }); return r.value; }
+  async function lerArquivo(f){
+    setMsg("#cvmsg", "Lendo " + f.name + "…", "");
+    try{
+      const buf = await f.arrayBuffer(); let txt = "";
+      const n = f.name.toLowerCase();
+      if(n.endsWith(".pdf") || f.type === "application/pdf") txt = await lerPdf(buf);
+      else if(n.endsWith(".docx")) txt = await lerDocx(buf);
+      else txt = new TextDecoder().decode(buf);
+      txt = txt.replace(/[ \t]+/g, " ").replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
+      if(txt.length < 80) throw new Error("Quase não achei texto nesse arquivo. Se for um PDF escaneado, cole o texto do currículo na caixa.");
+      $("#cvtext").value = txt.slice(0, 60000);
+      st.cvNome = f.name; showCv(); markDirty();
+      setMsg("#cvmsg", "Currículo lido (" + txt.split(/\s+/).length + " palavras). Salve para usar na busca.", "ok");
+    }catch(e){
+      $("#cvtext").hidden = false; $("#cvtoggle").textContent = "Esconder texto"; $("#cvfile").hidden = false; $("#cvname").textContent = "Cole o texto abaixo";
+      setMsg("#cvmsg", e.message || "Não consegui ler esse arquivo. Cole o texto do currículo na caixa.", "err");
+    }
+  }
+  function showCv(){ $("#cvfile").hidden = false; $("#cvname").textContent = st.cvNome || "Currículo salvo"; }
+
+  // ---------- perfil ----------
+  function coletar(){
+    return {
+      curriculoTexto: $("#cvtext").value.trim(),
+      curriculoArquivo: st.cvNome || "",
+      cargos: $("#cargos").value.split(",").map(s => s.trim()).filter(Boolean),
+      paises: [...st.sel.paises], modalidades: [...st.sel.modalidades], contratos: [...st.sel.contratos], sites: [...st.sel.sites],
+      senioridade: $("#senioridade").value, ingles: $("#ingles").value,
+      freelaSites: [...st.sel.freelaSites], freelaTipos: [...st.sel.freelaTipos], freelaValorMin: +$("#freelaMin").value,
+      githubUsuario: st.ghUser || "", linkedinUrl: st.liUrl || "",
+      atualizadoEm: new Date().toISOString()
+    };
+  }
+  function preencher(p){
+    if(p.curriculoTexto){ $("#cvtext").value = p.curriculoTexto; st.cvNome = p.curriculoArquivo || "Currículo salvo"; showCv(); }
+    if(Array.isArray(p.cargos) && p.cargos.length) $("#cargos").value = p.cargos.join(", ");
+    ["paises","modalidades","contratos","sites","freelaSites","freelaTipos"].forEach(k => { if(Array.isArray(p[k])) st.sel[k] = new Set(p[k]); });
+    if(p.freelaValorMin !== undefined) $("#freelaMin").value = String(p.freelaValorMin);
+    if(p.senioridade) $("#senioridade").value = p.senioridade;
+    if(p.ingles) $("#ingles").value = p.ingles;
+    renderAllChips();
+  }
+  function setMsg(sel, txt, cls){ const el = $(sel); el.textContent = txt; el.className = "msg" + (cls ? " " + cls : ""); }
+  async function salvar(){
+    if(!st.db){ setMsg("#savemsg", "O painel ainda está conectando. Tente de novo em alguns segundos.", "err"); return false; }
+    const p = coletar();
+    if(!p.curriculoTexto){ setMsg("#savemsg", "Suba ou cole seu currículo antes de salvar.", "err"); return false; }
+    if(!p.paises.length || !p.modalidades.length || !p.sites.length){ setMsg("#savemsg", "Escolha pelo menos um país, uma modalidade e um site.", "err"); return false; }
+    try{ await st.db.doc("config/perfil").set(p); st.dirty = false; setMsg("#savemsg", "Perfil salvo.", "ok"); return true; }
+    catch(e){ setMsg("#savemsg", e.code === "invalid_argument" ? "Só o dono do painel pode salvar o perfil." : "Não deu para salvar agora. Tente de novo.", "err"); return false; }
+  }
+  $("#salvar").addEventListener("click", salvar);
+
+  // ---------- disparar a tarefa ----------
+  async function dispararTarefa(texto, msgSel, okTxt){
+    const tid = st.agenda && st.agenda.triggerId;
+    if(!tid){ setMsg(msgSel, "A tarefa automática ainda não está configurada. Peça no chat.", "err"); return; }
+    const mcp = await claude.use("mcp");
+    if(!mcp){ setMsg(msgSel, "Este modo de visualização não consegue iniciar a tarefa; abra o painel no claude.ai ou peça no chat.", "err"); return; }
+    setMsg(msgSel, "Iniciando…", "");
+    await mcp.callTool("Claude Code Remote", "fire_trigger", { trigger_id: tid, text: texto }, { cache: false });
+    try{ await st.db.doc("sistema/pedido").set({ pedidoEm: new Date().toISOString(), tipo: texto }); }catch(_){}
+    setMsg(msgSel, okTxt, "ok");
+  }
+  function erroTarefa(e){
+    const m = {
+      approval_required: "Precisa da sua aprovação. Clique de novo e aceite o pedido do claude.ai.",
+      not_in_manifest: "Você não liberou o painel para iniciar tarefas. Ajuste nas permissões do artifact e tente de novo.",
+      server_not_connected: "O conector Claude Code Remote não está disponível para você. Peça no chat.",
+      needs_reauth: "Reconecte o Claude Code Remote em Configurações → Conectores no claude.ai.",
+      blocked_by_policy: "Sua organização bloqueou iniciar tarefas por aqui. Peça no chat.",
+      tool_error: "A tarefa recusou o pedido. Peça no chat para eu verificar.",
+      server_unavailable: "Pode ser que tenha começado, mas não tive confirmação. Espere uns minutos antes de clicar de novo.",
+      upstream_error: "Pode ser que tenha começado, mas não tive confirmação. Espere uns minutos antes de clicar de novo."
+    };
+    return m[e && e.code] || "Não consegui iniciar. Peça no chat.";
+  }
+
+  // ---------- projeto ----------
+  function renderProjeto(p){
+    const box = $("#proj");
+    if(!p || !p.titulo){ box.hidden = true; return; }
+    box.hidden = false;
+    $("#projtitulo").textContent = p.titulo;
+    const sk = Array.isArray(p.skillsMercado) ? p.skillsMercado : [];
+    const max = Math.max(1, ...sk.map(s => +s.vagas || 0));
+    const bars = sk.map(s => `<div class="bar${s.voceTem ? "" : " gap"}"><span class="nm" title="${esc(s.skill)}">${esc(s.skill)}</span><span class="tr"><i style="width:${Math.round((+s.vagas || 0) / max * 100)}%"></i></span><span class="ct">${+s.vagas || 0}</span></div>`).join("");
+    const etapas = (p.etapas || []).map(e => `<li><div><b>${esc(e.titulo)}</b>${e.semanas ? `<span class="wk">~${esc(e.semanas)} sem.</span>` : ""}<p>${esc(e.detalhe)}</p></div></li>`).join("");
+    const dados = (p.dados || []).map(d => { const u = safeUrl(d.url); return `<li>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(d.nome)}</a>` : esc(d.nome)}</li>`; }).join("");
+    const readme = (p.readme || []).map(r => `<li>${esc(r)}</li>`).join("");
+    const quando = p.geradoEm ? new Date(p.geradoEm).toLocaleDateString("pt-BR", { day:"2-digit", month:"short" }) : "";
+    $("#projbody").innerHTML = `
+      <div class="full"><p>${esc(p.resumo || "")}</p></div>
+      <div><h4>O que as vagas pedem</h4><div class="bars">${bars}</div><div class="legend"><span>Você já tem</span><span class="g">Lacuna que o projeto cobre</span></div></div>
+      <div><h4>Por que este projeto</h4><p>${esc(p.porQue || "")}</p>${(p.stack || []).length ? `<h4 style="margin-top:14px">Stack</h4><div class="chips">${p.stack.map(s => `<span class="tag">${esc(s)}</span>`).join("")}</div>` : ""}</div>
+      <div><h4>Passo a passo</h4><ol class="steps">${etapas}</ol></div>
+      <div><h4>Dados</h4><ul class="plain">${dados}</ul><h4 style="margin-top:14px">Dicas de README</h4><ul class="plain">${readme}</ul></div>
+      <div class="projfoot"><span class="found">Baseado em ${+p.baseVagas || 0} vagas · gerado ${esc(quando)}</span><button class="btn small" id="projcopy" type="button">Copiar plano em Markdown</button><button class="btn small" id="projnovo" type="button">Gerar outra ideia</button><p class="msg" id="projmsg"></p></div>`;
+    $("#projcopy").addEventListener("click", async () => {
+      const md = `# ${p.titulo}\n\n${p.resumo || ""}\n\n## Stack\n${(p.stack || []).map(s => "- " + s).join("\n")}\n\n## Dados\n${(p.dados || []).map(d => `- [${d.nome}](${d.url})`).join("\n")}\n\n## Etapas\n${(p.etapas || []).map((e, i) => `${i + 1}. **${e.titulo}** — ${e.detalhe}`).join("\n")}\n`;
+      try{ await navigator.clipboard.writeText(md); setMsg("#projmsg", "Plano copiado. Cole no README do repositório.", "ok"); }
+      catch(_){ setMsg("#projmsg", "Seu navegador bloqueou a cópia. Selecione o texto acima e copie manualmente.", "err"); }
+    });
+    $("#projnovo").addEventListener("click", async e => {
+      const b = e.currentTarget; b.disabled = true;
+      try{ await dispararTarefa("MODO PROJETO: não faça busca de vagas. Só gere uma ideia de projeto NOVA e diferente da atual (passo 9).", "#projmsg", "Gerando outra ideia. Ela aparece aqui em alguns minutos."); }
+      catch(err){ setMsg("#projmsg", erroTarefa(err), "err"); }
+      finally{ b.disabled = false; }
+    });
+  }
+
+  // ---------- revisão ----------
+  const copias = {};
+  async function copiar(txt, msgSel){
+    try{ await navigator.clipboard.writeText(txt); setMsg(msgSel, "Copiado.", "ok"); }
+    catch(_){ setMsg(msgSel, "Seu navegador bloqueou a cópia. Selecione o texto e copie manualmente.", "err"); }
+  }
+  const marca = s => esc(s).replace(/\[([^\]]+)\]/g, "<mark>[$1]</mark>");
+  function renderRevisao(r){
+    const box = $("#rv");
+    if(!r){ box.hidden = true; return; }
+    box.hidden = false;
+    const n = Math.max(0, Math.min(100, Math.round(+r.notaGeral || 0)));
+    $("#rvscore").style.setProperty("--p", n); $("#rvscore").style.setProperty("--c", scoreColor(n)); $("#rvnota").textContent = n;
+    $("#rvtitulo").textContent = n >= 80 ? "Currículo pronto para vagas de fora" : n >= 60 ? "Currículo quase lá para vagas de fora" : "Currículo precisa de ajustes para vagas de fora";
+    const lab = { ok: "ok", atencao: "atenção", critico: "crítico" };
+    const crit = (r.criterios || []).map(c => `<div class="row"><span class="nm">${esc(c.nome)}</span><span class="pill ${esc(c.status)}">${+c.nota || 0}/10 · ${lab[c.status] || esc(c.status)}</span><p class="cm">${esc(c.comentario)}</p></div>`).join("");
+    const fortes = (r.fortes || []).map(f => `<li>${esc(f)}</li>`).join("");
+    const corr = (r.correcoes || []).map(c => `<li><div><b>${esc(c.titulo)}</b><p>${esc(c.acao)}</p></div></li>`).join("");
+    copias.headline = r.headline || ""; copias.resumo = r.resumoIngles || "";
+    copias.bullets = (r.reescritas || []).map(x => "• " + x.depois).join("\n");
+    const rw = (r.reescritas || []).map(x => `<div class="pair"><span class="old">${esc(x.antes)}</span><span class="new">${marca(x.depois)}</span></div>`).join("");
+    const estr = (r.estrutura || []).map(s => `<li>${esc(s)}</li>`).join("");
+    const gh = r.github || {};
+    const ghd = (gh.dicas || []).map(s => `<li>${esc(s)}</li>`).join("");
+    const fontes = r.fontes || {};
+    const quando = r.geradoEm ? new Date(r.geradoEm).toLocaleDateString("pt-BR", { day:"2-digit", month:"short" }) : "";
+    $("#rvbody").innerHTML = `
+      <div class="full"><p>${esc(r.veredito || "")}</p></div>
+      <div><h4>Nota por critério</h4><div class="crit">${crit}</div></div>
+      <div><h4>O que corrigir, em ordem</h4><ol class="steps">${corr}</ol><h4 style="margin-top:16px">Pontos fortes</h4><ul class="plain">${fortes}</ul></div>
+      <div><h4>Título do LinkedIn</h4><div class="copybox"><span>${esc(r.headline || "")}</span><button class="btn small" type="button" data-cp="headline">Copiar título</button></div></div>
+      <div><h4>Summary em inglês</h4><div class="copybox"><span>${esc(r.resumoIngles || "")}</span><button class="btn small" type="button" data-cp="resumo">Copiar summary</button></div></div>
+      <div class="full"><h4>Bullets reescritos · troque os [colchetes] pelos seus números reais</h4><div class="rw">${rw}</div><button class="btn small" type="button" data-cp="bullets" style="margin-top:10px">Copiar bullets em inglês</button></div>
+      <div><h4>Estrutura de 1 página</h4><ol class="steps">${estr}</ol></div>
+      <div><h4>GitHub</h4><p class="hint" style="margin-bottom:8px">${esc(gh.comentario || "")}</p><ul class="plain">${ghd}</ul>
+        <div class="ghform" style="margin-top:12px"><input type="text" id="ghuser" placeholder="Usuário do GitHub" aria-label="Usuário do GitHub" value="${esc(st.ghUser || "")}"><input type="text" id="liurl" placeholder="URL do LinkedIn" aria-label="URL do LinkedIn" value="${esc(st.liUrl || "")}"></div></div>
+      <div class="projfoot"><span class="found">Analisado: ${esc(fontes.curriculo || "currículo")} · ${esc(fontes.github || "")} · ${esc(quando)}</span><button class="btn small" id="rvnovo" type="button">Revisar de novo</button><p class="msg" id="rvmsg"></p></div>`;
+    $("#rvbody").querySelectorAll("[data-cp]").forEach(b => b.addEventListener("click", () => copiar(copias[b.dataset.cp] || "", "#rvmsg")));
+    $("#rvnovo").addEventListener("click", async e => {
+      const b = e.currentTarget; b.disabled = true;
+      try{
+        const gu = $("#ghuser").value.trim().replace(/^@/, "").replace(/^https?:\/\/(www\.)?github\.com\//i, "").replace(/\/.*$/, "");
+        const lu = $("#liurl").value.trim();
+        if(st.dirty) await salvar();
+        try{ await st.db.doc("config/perfil").update({ githubUsuario: gu, linkedinUrl: lu }); }catch(_){}
+        await dispararTarefa("MODO REVISAO: não faça busca de vagas. Só refaça a revisão do currículo (passo 10).", "#rvmsg", "Revisão pedida. A nova versão aparece aqui em alguns minutos.");
+      }catch(err){ setMsg("#rvmsg", erroTarefa(err), "err"); }
+      finally{ b.disabled = false; }
+    });
+  }
+
+  // ---------- buscar agora ----------
+  $("#buscar").addEventListener("click", async () => {
+    const btn = $("#buscar"); btn.disabled = true;
+    try{
+      if(!(await salvar())) return;
+      await dispararTarefa("MODO BUSCA: só busque vagas novas (passos 1 a 8). Não refaça a comparação das vagas antigas.", "#savemsg", "Busca iniciada. Leva uns minutos; as vagas novas aparecem aqui sozinhas.");
+    }catch(e){ setMsg("#savemsg", erroTarefa(e), "err"); }
+    finally{ btn.disabled = false; }
+  });
+  $("#comparar").addEventListener("click", async () => {
+    const btn = $("#comparar"); btn.disabled = true;
+    try{
+      if(!st.vagas.length){ setMsg("#savemsg", "Ainda não há vagas para comparar. Busque vagas primeiro.", "err"); return; }
+      if(!(await salvar())) return;
+      await dispararTarefa("MODO COMPARAR: não busque vagas novas. Só recalcule a nota das vagas existentes com o currículo atual (passo 11).", "#savemsg", "Comparação iniciada. As notas se atualizam aqui em alguns minutos.");
+    }catch(e){ setMsg("#savemsg", erroTarefa(e), "err"); }
+    finally{ btn.disabled = false; }
+  });
+
+  // ---------- freelance ----------
+  $("#buscarFreela").addEventListener("click", async () => {
+    const btn = $("#buscarFreela"); btn.disabled = true;
+    try{
+      if(!st.sel.freelaSites.size || !st.sel.freelaTipos.size){ setMsg("#freelamsg", "Escolha pelo menos uma plataforma e uma forma de pagamento.", "err"); return; }
+      if(!(await salvar())){ setMsg("#freelamsg", "Salve o perfil primeiro (veja a mensagem acima).", "err"); return; }
+      await dispararTarefa("MODO FREELA: só busque projetos freelance (passo 12). Não busque vagas.", "#freelamsg", "Busca de projetos iniciada. Eles aparecem na aba Projetos freelance em alguns minutos.");
+      setView("freelas");
+    }catch(e){ setMsg("#freelamsg", erroTarefa(e), "err"); }
+    finally{ btn.disabled = false; }
+  });
+  function setView(v){
+    if(st.view === v) return;
+    st.view = v; st.tab = "nova";
+    $("#viewswitch").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v));
+    $("#boardtitle").textContent = v === "vagas" ? "Vagas encontradas" : "Projetos freelance";
+    $("#q").placeholder = v === "vagas" ? "Filtrar por cargo, empresa, país…" : "Filtrar por projeto, plataforma, cliente…";
+    renderVagas();
+  }
+  $("#viewswitch").querySelectorAll("button").forEach(b => b.addEventListener("click", () => setView(b.dataset.v)));
+
+  // ---------- vagas ----------
+  function renderTabs(){
+    const T = st.view === "vagas" ? TABS : FTABS; const items = st.view === "vagas" ? st.vagas : st.freelas;
+    const counts = {}; T.forEach(([k]) => counts[k] = 0);
+    items.forEach(v => { const s = v.status || "nova"; if(counts[s] !== undefined) counts[s]++; });
+    const novas = arr => arr.filter(v => (v.status || "nova") === "nova").length;
+    $("#nvagas").textContent = st.vagas.length ? novas(st.vagas) : ""; $("#nfreelas").textContent = st.freelas.length ? novas(st.freelas) : "";
+    $("#tabs").innerHTML = T.map(([k, l]) => `<button class="tab" role="tab" aria-selected="${st.tab === k}" data-k="${k}">${l}<span class="n">${counts[k]}</span></button>`).join("");
+    $("#tabs").querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { st.tab = b.dataset.k; renderVagas(); }));
+  }
+  function scoreColor(n){ return n >= 80 ? "var(--good)" : n >= 60 ? "var(--accent)" : n >= 45 ? "var(--warn)" : "var(--muted)"; }
+  function fmtData(iso){ if(!iso) return ""; const d = new Date(iso); if(isNaN(d)) return esc(iso); return d.toLocaleDateString("pt-BR", { day:"2-digit", month:"short" }); }
+  function safeUrl(u){ return /^https?:\/\//i.test(u || "") ? u : null; }
+  function renderVagas(){
+    renderTabs();
+    const F = st.view === "freelas"; const items = F ? st.freelas : st.vagas;
+    const q = $("#q").value.trim().toLowerCase(); const min = +$("#minscore").value; const ordem = $("#ordem").value;
+    let vs = items.filter(v => (v.status || "nova") === st.tab && (+v.nota || 0) >= min);
+    if(q) vs = vs.filter(v => [v.titulo, v.empresa, v.cliente, v.local, v.pais, v.site, v.plataforma, v.modalidade, v.orcamento].join(" ").toLowerCase().includes(q));
+    vs.sort(ordem === "nota" ? (a, b) => (+b.nota || 0) - (+a.nota || 0) : (a, b) => String(b.encontradaEm || "").localeCompare(String(a.encontradaEm || "")));
+    const list = $("#list");
+    if(F && !st.freelas.length){
+      list.innerHTML = `<div class="empty"><h3>Nenhum projeto ainda</h3><ol><li>Escolha as plataformas, a forma de pagamento e o valor mínimo em <b>Projetos freelance</b>, no painel ao lado.</li><li>Clique em <b>Buscar projetos freelance</b>.</li><li>Os projetos aparecem aqui com o valor, o prazo, uma nota de compatibilidade e o link para mandar proposta.</li></ol><p class="hint">Depois disso a busca de projetos roda junto com a de vagas toda manhã.</p></div>`;
+      return;
+    }
+    if(!F && !st.vagas.length){
+      list.innerHTML = `<div class="empty"><h3>Nenhuma vaga ainda</h3><ol><li>Suba seu currículo e escolha países, modalidade e sites.</li><li>Clique em <b>Buscar vagas novas</b>.</li><li>Em alguns minutos as vagas aparecem aqui com uma nota de 0 a 100 de compatibilidade e o link para aplicar.</li></ol><p class="hint">Depois disso a busca roda sozinha toda manhã de segunda a sexta.</p></div>`;
+      return;
+    }
+    if(!vs.length){ list.innerHTML = `<div class="empty"><h3>Nada nesta lista</h3><p class="hint">${st.tab === "nova" ? "Nenhuma vaga nova com esses filtros. A próxima busca automática traz mais." : "Mude de aba ou afrouxe os filtros."}</p></div>`; return; }
+    const ex = F ? st.fexec : st.exec;
+    const recente = ex && ex.fim ? ex.inicio : null;
+    if(F){
+      list.innerHTML = vs.map(v => {
+        const n = Math.max(0, Math.min(100, Math.round(+v.nota || 0)));
+        const url = safeUrl(v.url); const s = v.status || "nova";
+        const nova = s === "nova" && recente && v.encontradaEm && v.encontradaEm >= recente;
+        const btns = s === "nova" ? `<button class="btn small" data-a="salva">Salvar</button><button class="btn small" data-a="proposta">Mandei proposta</button><button class="btn ghost small" data-a="descartada">Descartar</button>`
+          : s === "salva" ? `<button class="btn small" data-a="proposta">Mandei proposta</button><button class="btn ghost small" data-a="descartada">Descartar</button>` : `<button class="btn ghost small" data-a="nova">Voltar para novos</button>`;
+        return `<article class="job" data-id="${esc(v.id)}">
+          <div class="score" style="--p:${n};--c:${scoreColor(n)}" title="Compatibilidade com seu currículo"><span>${n}</span></div>
+          <h3>${esc(v.titulo || "Projeto sem título")}${v.orcamento ? `<span class="budget">${esc(v.orcamento)}</span>` : ""}${nova ? '<span class="badge-new">novo hoje</span>' : ""}${v.notaAnterior !== undefined && Math.round(+v.notaAnterior) !== n ? `<span class="tag">${n > +v.notaAnterior ? "↑" : "↓"} antes ${Math.round(+v.notaAnterior)}</span>` : ""}</h3>
+          <div class="meta"><b>${esc(v.cliente || "Cliente não informado")}</b>${v.pais ? `<span>${esc(v.pais)}</span>` : ""}${v.tipoPagamento ? `<span>${esc(v.tipoPagamento)}</span>` : ""}${v.prazo ? `<span>${esc(v.prazo)}</span>` : ""}${v.propostas ? `<span>${esc(v.propostas)} propostas</span>` : ""}</div>
+          <p class="why">${esc(v.motivo || "")}${v.lacunas ? ` <span class="gap">Falta: ${esc(v.lacunas)}</span>` : ""}</p>
+          <div class="jobfoot">${url ? `<a class="btn primary small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Abrir projeto ↗</a>` : ""}${btns}<span class="spacer"></span><span class="tag">${esc(v.plataforma || "web")}</span><span class="found">${v.publicadaEm ? "publicado " + fmtData(v.publicadaEm) : "achado " + fmtData(v.encontradaEm)}</span></div>
+        </article>`;
+      }).join("");
+    } else
+    list.innerHTML = vs.map(v => {
+      const n = Math.max(0, Math.min(100, Math.round(+v.nota || 0)));
+      const url = safeUrl(v.url);
+      const nova = (v.status || "nova") === "nova" && recente && v.encontradaEm && v.encontradaEm >= recente;
+      const btns = (v.status || "nova") === "nova"
+        ? `<button class="btn small" data-a="salva">Salvar</button><button class="btn small" data-a="aplicada">Já apliquei</button><button class="btn ghost small" data-a="descartada">Descartar</button>`
+        : (v.status === "salva" ? `<button class="btn small" data-a="aplicada">Já apliquei</button><button class="btn ghost small" data-a="descartada">Descartar</button>` : `<button class="btn ghost small" data-a="nova">Voltar para novas</button>`);
+      return `<article class="job" data-id="${esc(v.id)}">
+        <div class="score" style="--p:${n};--c:${scoreColor(n)}" title="Compatibilidade com seu currículo"><span>${n}</span></div>
+        <h3>${esc(v.titulo || "Vaga sem título")}${nova ? '<span class="badge-new">nova hoje</span>' : ""}${v.notaAnterior !== undefined && Math.round(+v.notaAnterior) !== n ? `<span class="tag" title="Nota antes da última comparação">${n > +v.notaAnterior ? "↑" : "↓"} antes ${Math.round(+v.notaAnterior)}</span>` : ""}</h3>
+        <div class="meta"><b>${esc(v.empresa || "Empresa não informada")}</b>${v.local ? `<span>${esc(v.local)}</span>` : ""}${v.modalidade ? `<span>${esc(v.modalidade)}</span>` : ""}${v.contrato ? `<span>${esc(v.contrato)}</span>` : ""}${v.salario ? `<span>${esc(v.salario)}</span>` : ""}</div>
+        <p class="why">${esc(v.motivo || "")}${v.lacunas ? ` <span class="gap">Falta: ${esc(v.lacunas)}</span>` : ""}</p>
+        <div class="jobfoot">${url ? `<a class="btn primary small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Abrir vaga ↗</a>` : ""}${btns}<span class="spacer"></span><span class="tag">${esc(v.site || "web")}</span><span class="found">${v.publicadaEm ? "publicada " + fmtData(v.publicadaEm) : "achada " + fmtData(v.encontradaEm)}</span></div>
+      </article>`;
+    }).join("");
+    list.querySelectorAll(".job [data-a]").forEach(b => b.addEventListener("click", async () => {
+      const id = b.closest(".job").dataset.id; b.disabled = true;
+      try{ await st.db.doc((F ? "freelas/" : "vagas/") + id).update({ status: b.dataset.a, statusEm: new Date().toISOString() }); }
+      catch(e){ b.disabled = false; showNotice(F ? "Não consegui mudar o status desse projeto. Tente de novo." : "Não consegui mudar o status dessa vaga. Tente de novo.", true); }
+    }));
+  }
+  ["input","change"].forEach(ev => { $("#q").addEventListener(ev, renderVagas); });
+  $("#minscore").addEventListener("change", renderVagas);
+  $("#ordem").addEventListener("change", renderVagas);
+
+  // ---------- status ----------
+  function renderRun(){
+    const e = st.exec, dot = $("#rundot"), t = $("#runtxt");
+    if(!e){ dot.className = "dot"; t.innerHTML = "Nenhuma busca rodou ainda"; }
+    else if(e.estado === "rodando"){ dot.className = "dot run"; t.innerHTML = "Buscando vagas agora…"; }
+    else if(e.estado === "erro"){ dot.className = "dot err"; t.innerHTML = "Última busca falhou: " + esc(e.mensagem || "erro"); }
+    else { dot.className = "dot ok"; t.innerHTML = `Última busca <b>${e.fim ? new Date(e.fim).toLocaleString("pt-BR", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }) : "—"}</b> · <b>${+e.novas || 0}</b> novas`; }
+    const c = st.comp;
+    const compTxt = !c ? "" : c.estado === "rodando" ? `<span><span class="dot run"></span>Comparando currículo com as vagas…</span>` : c.estado === "erro" ? `<span><span class="dot err"></span>Comparação falhou: ${esc(c.mensagem || "erro")}</span>` : `<span>Comparação <b>${c.fim ? new Date(c.fim).toLocaleString("pt-BR", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }) : "—"}</b> · <b>${+c.vagas || 0}</b> vagas recalculadas</span>`;
+    const f = st.fexec;
+    const fTxt = !f ? "" : f.estado === "rodando" ? `<span><span class="dot run"></span>Buscando projetos freelance…</span>` : f.estado === "erro" ? `<span><span class="dot err"></span>Busca de projetos falhou: ${esc(f.mensagem || "erro")}</span>` : `<span>Projetos <b>${f.fim ? new Date(f.fim).toLocaleString("pt-BR", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }) : "—"}</b> · <b>${+f.novos || 0}</b> novos</span>`;
+    const parts = [compTxt, fTxt].filter(Boolean).join(" · ");
+    $("#agendatxt").innerHTML = parts + (st.agenda && st.agenda.horario ? `${parts ? " · " : ""}Automática: <b>${esc(st.agenda.horario)}</b>` : "");
+  }
+  function showNotice(txt, err){ const n = $("#topnotice"); n.textContent = txt; n.className = "notice" + (err ? " err" : ""); n.hidden = false; }
+
+  // ---------- boot ----------
+  renderAllChips(); renderVagas(); renderRun();
+  (async () => {
+    const db = await claude.use("db");
+    if(!db){ $("#runtxt").textContent = "Abra no claude.ai para usar o painel"; showNotice("Este painel guarda seu currículo e as vagas na sua conta. Abra pelo claude.ai, logado, para usar.", true); return; }
+    st.db = db;
+    const user = await claude.use("user");
+    if(user && !user.isOwner()){ st.readOnly = true; showNotice("Este painel é pessoal. Só o dono vê o currículo e as vagas."); }
+    db.doc("config/perfil").onSnapshot(s => { if(s.exists){ const d = s.data(); st.ghUser = d.githubUsuario || ""; st.liUrl = d.linkedinUrl || ""; const gi = document.getElementById("ghuser"); if(gi && !gi.value) gi.value = st.ghUser; const li = document.getElementById("liurl"); if(li && st.liUrl && document.activeElement !== li) li.value = st.liUrl; if(!st.dirty){ preencher(d); st.loadedPerfil = true; } } }, () => {});
+    db.doc("sistema/revisao").onSnapshot(s => renderRevisao(s.exists ? s.data() : null), () => {});
+    db.collection("vagas").onSnapshot(s => { st.vagas = s.docs.map(d => Object.assign({ id: d.id }, d.data())); renderVagas(); }, () => showNotice("Parei de receber atualizações das vagas. Recarregue a página.", true));
+    db.doc("sistema/execucao").onSnapshot(s => { st.exec = s.exists ? s.data() : null; renderRun(); renderVagas(); }, () => {});
+    db.collection("freelas").onSnapshot(s => { st.freelas = s.docs.map(d => Object.assign({ id: d.id }, d.data())); renderVagas(); }, () => showNotice("Parei de receber atualizações dos projetos. Recarregue a página.", true));
+    db.doc("sistema/freela_execucao").onSnapshot(s => { st.fexec = s.exists ? s.data() : null; renderRun(); renderVagas(); }, () => {});
+    db.doc("sistema/comparacao").onSnapshot(s => { st.comp = s.exists ? s.data() : null; renderRun(); }, () => {});
+    db.doc("sistema/projeto").onSnapshot(s => renderProjeto(s.exists ? s.data() : null), () => {});
+    db.doc("sistema/agenda").onSnapshot(s => { st.agenda = s.exists ? s.data() : null; renderRun(); }, () => {});
+  })();
+})();
+</script>
