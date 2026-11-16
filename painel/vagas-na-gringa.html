@@ -153,6 +153,8 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
 .projfoot .found{flex:1}
 .projfoot .msg{flex-basis:100%}
 
+.langrow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:8px}
+.langrow select:disabled{opacity:.5}
 .viewswitch{display:flex;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;align-self:flex-start;max-width:100%;flex-wrap:wrap}
 .viewswitch button{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:7px;border:0;background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .viewswitch button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -185,7 +187,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
 
 <div class="wrap">
   <header class="top">
-    <h1><small>Vagas internacionais · Remoto · Freelance</small>Vagas na Gringa</h1>
+    <h1><small>Brasil e exterior · Freelance</small>Vagas na Gringa</h1>
     <div class="runbar" id="runbar">
       <span><span class="dot" id="rundot"></span><span id="runtxt">Carregando…</span></span>
       <span id="agendatxt"></span>
@@ -213,7 +215,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
       <div class="field">
         <label class="label" for="cargos">Cargos que você quer</label>
         <input type="text" id="cargos" value="Data Analyst, BI Analyst, Analytics Engineer, Data Engineer">
-        <p class="hint">Separe por vírgula. Em inglês acha mais vagas.</p>
+        <p class="hint">Separe por vírgula. Para vagas fora do Brasil, escreva também em inglês.</p>
       </div>
 
       <div class="field">
@@ -232,11 +234,14 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
         <div class="chips" id="contratos" role="group" aria-label="Tipo de contrato"></div>
       </div>
 
-      <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field"><label class="label" for="senioridade">Nível</label>
-          <select id="senioridade"><option>Júnior</option><option selected>Júnior ou Pleno</option><option>Pleno</option><option>Pleno ou Sênior</option><option>Sênior</option></select></div>
-        <div class="field"><label class="label" for="ingles">Inglês</label>
-          <select id="ingles"><option>Básico</option><option selected>Intermediário</option><option>Avançado</option><option>Fluente</option></select></div>
+      <div class="field"><label class="label" for="senioridade">Nível da vaga</label>
+        <select id="senioridade"><option>Estágio</option><option>Júnior</option><option selected>Júnior ou Pleno</option><option>Pleno</option><option>Pleno ou Sênior</option><option>Sênior</option></select></div>
+
+      <div class="field">
+        <span class="label">Idiomas</span>
+        <div class="langrow"><select id="idioma1" aria-label="Primeiro idioma"></select><select id="nivel1" aria-label="Nível do primeiro idioma"></select></div>
+        <div class="langrow"><select id="idioma2" aria-label="Segundo idioma"></select><select id="nivel2" aria-label="Nível do segundo idioma"></select></div>
+        <p class="hint">Além do português. As notas das vagas levam em conta o idioma que cada uma pede.</p>
       </div>
 
       <div class="field">
@@ -293,7 +298,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
         <div class="projbody" id="projbody"></div>
       </details>
       <details class="proj rv" id="rv" hidden>
-        <summary><span class="score" id="rvscore" style="--p:0;--c:var(--muted)"><span id="rvnota"></span></span><span class="st"><span class="eb">Revisão do currículo · GitHub · LinkedIn</span><br><span class="tt" id="rvtitulo">Seu currículo para vagas de fora</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <summary><span class="score" id="rvscore" style="--p:0;--c:var(--muted)"><span id="rvnota"></span></span><span class="st"><span class="eb">Revisão do currículo · GitHub · LinkedIn</span><br><span class="tt" id="rvtitulo">Seu currículo para as vagas escolhidas</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
         <div class="projbody" id="rvbody"></div>
       </details>
       <div class="filters">
@@ -308,14 +313,17 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
 
 <script>
 (function(){
-  const PAISES = ["Qualquer lugar (remoto global)","América Latina","Estados Unidos","Canadá","Reino Unido","Irlanda","Portugal","Espanha","Alemanha","Holanda","Europa (qualquer país)","Japão","Austrália"];
-  const MODALIDADES = ["Remoto (trabalhando do Brasil)","Híbrido","Presencial com visto/relocação"];
-  const CONTRATOS = ["Contractor / PJ (meu CNPJ)","Funcionário full-time"];
-  const SITES = ["LinkedIn","Glassdoor","Indeed","Remotive","Himalayas","We Work Remotely","Remote OK","Wellfound","Turing","Japan Dev / TokyoDev"];
+  const PAISES = ["Brasil","Qualquer lugar (remoto global)","América Latina","Estados Unidos","Canadá","Reino Unido","Irlanda","Portugal","Espanha","Alemanha","Holanda","Europa (qualquer país)","Japão","Austrália"];
+  const MODALIDADES = ["Remoto (trabalhando do Brasil)","Híbrido","Presencial","Presencial com visto/relocação"];
+  const IDIOMAS = ["Inglês","Espanhol","Francês","Alemão","Italiano","Japonês","Mandarim","Coreano","Árabe","Russo","Português","Libras"];
+  const NIVEIS = ["Básico","Intermediário","Avançado","Fluente","Nativo"];
+  const OLD_CONTRATO = { "Funcionário full-time": "CLT / funcionário full-time" };
+  const CONTRATOS = ["CLT / funcionário full-time","Contractor / PJ (meu CNPJ)","Estágio"];
+  const SITES = ["LinkedIn","Gupy","Vagas.com","InfoJobs","Catho","Glassdoor","Indeed","Remotive","Himalayas","We Work Remotely","Remote OK","Wellfound","Turing","Japan Dev / TokyoDev"];
   const DEFAULTS = {
     paises:["Qualquer lugar (remoto global)","Estados Unidos","Canadá","Europa (qualquer país)","Japão"],
     modalidades:["Remoto (trabalhando do Brasil)"],
-    contratos:["Contractor / PJ (meu CNPJ)","Funcionário full-time"],
+    contratos:["CLT / funcionário full-time","Contractor / PJ (meu CNPJ)"],
     sites:SITES.slice()
   };
   const TABS = [["nova","Novas"],["salva","Salvas"],["aplicada","Aplicadas"],["descartada","Descartadas"]];
@@ -353,7 +361,24 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
   $("#paisadd").addEventListener("click", addPais);
   $("#paisnovo").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); addPais(); } });
   function addPais(){ const v = $("#paisnovo").value.trim(); if(!v) return; st.extraPaises.push(v); st.sel.paises.add(v); $("#paisnovo").value = ""; renderChips("paises", allPaises(), "paises"); markDirty(); }
-  ["cargos","senioridade","ingles","cvtext"].forEach(id => document.getElementById(id).addEventListener("input", markDirty));
+  // ---------- idiomas ----------
+  const optList = (arr, sel) => arr.map(o => `<option${o === sel ? " selected" : ""}>${esc(o)}</option>`).join("");
+  function setIdiomas(list){
+    const a = list[0] || { idioma: "Inglês", nivel: "Intermediário" };
+    const b = list[1] || { idioma: "Nenhuma", nivel: "" };
+    $("#idioma1").innerHTML = optList(IDIOMAS, a.idioma); $("#nivel1").innerHTML = optList(NIVEIS, a.nivel || "Intermediário");
+    $("#idioma2").innerHTML = optList(["Nenhuma"].concat(IDIOMAS), b.idioma); $("#nivel2").innerHTML = optList(NIVEIS, b.nivel || "Básico");
+    syncIdioma2();
+  }
+  function syncIdioma2(){ const none = $("#idioma2").value === "Nenhuma"; $("#nivel2").disabled = none; }
+  function getIdiomas(){
+    const out = [{ idioma: $("#idioma1").value, nivel: $("#nivel1").value }];
+    if($("#idioma2").value !== "Nenhuma" && $("#idioma2").value !== $("#idioma1").value) out.push({ idioma: $("#idioma2").value, nivel: $("#nivel2").value });
+    return out;
+  }
+  setIdiomas([]);
+  ["idioma1","nivel1","idioma2","nivel2"].forEach(id => document.getElementById(id).addEventListener("change", () => { syncIdioma2(); markDirty(); }));
+  ["cargos","senioridade","cvtext"].forEach(id => document.getElementById(id).addEventListener("input", markDirty));
   function markDirty(){ st.dirty = true; setMsg("#savemsg", "Alterações ainda não salvas.", ""); }
 
   // ---------- currículo ----------
@@ -406,7 +431,8 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
       curriculoArquivo: st.cvNome || "",
       cargos: $("#cargos").value.split(",").map(s => s.trim()).filter(Boolean),
       paises: [...st.sel.paises], modalidades: [...st.sel.modalidades], contratos: [...st.sel.contratos], sites: [...st.sel.sites],
-      senioridade: $("#senioridade").value, ingles: $("#ingles").value,
+      senioridade: $("#senioridade").value, idiomas: getIdiomas(),
+      ingles: (getIdiomas().find(x => x.idioma === "Inglês") || { nivel: "Nenhum" }).nivel,
       freelaSites: [...st.sel.freelaSites], freelaTipos: [...st.sel.freelaTipos], freelaValorMin: +$("#freelaMin").value,
       githubUsuario: st.ghUser || "", linkedinUrl: st.liUrl || "",
       atualizadoEm: new Date().toISOString()
@@ -418,7 +444,9 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
     ["paises","modalidades","contratos","sites","freelaSites","freelaTipos"].forEach(k => { if(Array.isArray(p[k])) st.sel[k] = new Set(p[k]); });
     if(p.freelaValorMin !== undefined) $("#freelaMin").value = String(p.freelaValorMin);
     if(p.senioridade) $("#senioridade").value = p.senioridade;
-    if(p.ingles) $("#ingles").value = p.ingles;
+    if(Array.isArray(p.idiomas) && p.idiomas.length) setIdiomas(p.idiomas);
+    else if(p.ingles) setIdiomas([{ idioma: "Inglês", nivel: p.ingles }]);
+    if(Array.isArray(p.contratos)) st.sel.contratos = new Set(p.contratos.map(c => OLD_CONTRATO[c] || c));
     renderAllChips();
   }
   function setMsg(sel, txt, cls){ const el = $(sel); el.textContent = txt; el.className = "msg" + (cls ? " " + cls : ""); }
@@ -503,7 +531,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
     box.hidden = false;
     const n = Math.max(0, Math.min(100, Math.round(+r.notaGeral || 0)));
     $("#rvscore").style.setProperty("--p", n); $("#rvscore").style.setProperty("--c", scoreColor(n)); $("#rvnota").textContent = n;
-    $("#rvtitulo").textContent = n >= 80 ? "Currículo pronto para vagas de fora" : n >= 60 ? "Currículo quase lá para vagas de fora" : "Currículo precisa de ajustes para vagas de fora";
+    $("#rvtitulo").textContent = n >= 80 ? "Currículo pronto para as vagas escolhidas" : n >= 60 ? "Currículo quase lá" : "Currículo precisa de ajustes";
     const lab = { ok: "ok", atencao: "atenção", critico: "crítico" };
     const crit = (r.criterios || []).map(c => `<div class="row"><span class="nm">${esc(c.nome)}</span><span class="pill ${esc(c.status)}">${+c.nota || 0}/10 · ${lab[c.status] || esc(c.status)}</span><p class="cm">${esc(c.comentario)}</p></div>`).join("");
     const fortes = (r.fortes || []).map(f => `<li>${esc(f)}</li>`).join("");
@@ -521,9 +549,9 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
       <div><h4>Nota por critério</h4><div class="crit">${crit}</div></div>
       <div><h4>O que corrigir, em ordem</h4><ol class="steps">${corr}</ol><h4 style="margin-top:16px">Pontos fortes</h4><ul class="plain">${fortes}</ul></div>
       <div><h4>Título do LinkedIn</h4><div class="copybox"><span>${esc(r.headline || "")}</span><button class="btn small" type="button" data-cp="headline">Copiar título</button></div></div>
-      <div><h4>Summary em inglês</h4><div class="copybox"><span>${esc(r.resumoIngles || "")}</span><button class="btn small" type="button" data-cp="resumo">Copiar summary</button></div></div>
-      <div class="full"><h4>Bullets reescritos · troque os [colchetes] pelos seus números reais</h4><div class="rw">${rw}</div><button class="btn small" type="button" data-cp="bullets" style="margin-top:10px">Copiar bullets em inglês</button></div>
-      <div><h4>Estrutura de 1 página</h4><ol class="steps">${estr}</ol></div>
+      <div><h4>Resumo profissional</h4><div class="copybox"><span>${esc(r.resumoIngles || "")}</span><button class="btn small" type="button" data-cp="resumo">Copiar resumo</button></div></div>
+      <div class="full"><h4>Trechos reescritos · troque os [colchetes] pelos seus números reais</h4><div class="rw">${rw}</div><button class="btn small" type="button" data-cp="bullets" style="margin-top:10px">Copiar trechos reescritos</button></div>
+      <div><h4>Estrutura sugerida</h4><ol class="steps">${estr}</ol></div>
       <div><h4>GitHub</h4><p class="hint" style="margin-bottom:8px">${esc(gh.comentario || "")}</p><ul class="plain">${ghd}</ul>
         <div class="ghform" style="margin-top:12px"><input type="text" id="ghuser" placeholder="Usuário do GitHub" aria-label="Usuário do GitHub" value="${esc(st.ghUser || "")}"><input type="text" id="liurl" placeholder="URL do LinkedIn" aria-label="URL do LinkedIn" value="${esc(st.liUrl || "")}"></div></div>
       <div class="projfoot"><span class="found">Analisado: ${esc(fontes.curriculo || "currículo")} · ${esc(fontes.github || "")} · ${esc(quando)}</span><button class="btn small" id="rvnovo" type="button">Revisar de novo</button><p class="msg" id="rvmsg"></p></div>`;

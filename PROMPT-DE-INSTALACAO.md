@@ -11,7 +11,7 @@ Quero instalar o painel "Vagas na Gringa" na minha conta. Anexei dois arquivos: 
 
 2. Publique vagas-na-gringa.html como um artifact novo, sem mudar o código, com:
    - ícone "briefcase"
-   - descrição: "Painel pessoal de vagas internacionais e projetos freelance, ranqueados pelo meu currículo."
+   - descrição: "Painel pessoal de vagas no Brasil e no exterior e projetos freelance, ranqueados pelo meu currículo."
    - capabilities exatamente assim:
      {"db": {"rules": [{"path": "", "read": "owner", "write": "owner"}]},
       "user": {},

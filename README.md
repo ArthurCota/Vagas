@@ -1,13 +1,14 @@
 # Vagas na Gringa
 
-Painel pessoal no Claude para quem mora no Brasil e quer trabalhar para empresas de fora. Você sobe o currículo, escolhe países e modalidade, e o Claude pesquisa vagas e projetos freelance todo dia, dá uma nota de compatibilidade para cada um e deixa o link pronto para aplicar.
+Painel pessoal no Claude para quem mora no Brasil e procura trabalho aqui ou fora. Você sobe o currículo, escolhe países e modalidade, e o Claude pesquisa vagas e projetos freelance todo dia, dá uma nota de compatibilidade para cada um e deixa o link pronto para aplicar.
 
 ## O que ele faz
 
-- **Vagas CLT / PJ**: busca em LinkedIn, Glassdoor, Indeed, Remotive, Himalayas, We Work Remotely, Remote OK, Wellfound, Turing e sites do Japão. Cada vaga ganha uma nota de 0 a 100, o motivo e o que falta no seu currículo.
+- **Idiomas**: escolha até dois idiomas além do português, cada um com seu nível (o segundo pode ser "Nenhuma"). A nota de cada vaga considera os idiomas que ela pede.
+- **Vagas CLT / PJ / estágio**: no Brasil ou fora, busca em LinkedIn, Gupy, Vagas.com, InfoJobs, Catho, Glassdoor, Indeed, Remotive, Himalayas, We Work Remotely, Remote OK, Wellfound, Turing e sites do Japão. Cada vaga ganha uma nota de 0 a 100, o motivo e o que falta no seu currículo.
 - **Projetos freelance**: busca em Upwork, Freelancer.com, Workana, Contra, Guru, PeoplePerHour, Malt e 99Freelas, com filtro de valor mínimo e de preço fixo ou por hora.
 - **Comparar currículo**: recalcula as notas das vagas que já estão no painel depois que você melhora o currículo, mostrando quanto cada uma subiu ou desceu.
-- **Revisão do currículo**: nota pelo padrão de currículos que passam em triagem internacional, correções em ordem de prioridade, título do LinkedIn e summary em inglês, e bullets reescritos.
+- **Revisão do currículo**: nota pelo padrão de currículos que passam em triagem no mercado escolhido (Brasil, exterior ou os dois), correções em ordem de prioridade, título do LinkedIn, resumo profissional e trechos reescritos.
 - **Projeto para o GitHub**: uma ideia de projeto de portfólio que cobre as skills que mais aparecem nas vagas e ainda faltam no seu currículo.
 - **Busca automática**: roda de segunda a sexta às 7:43 e manda notificação no celular.
 
