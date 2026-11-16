@@ -155,6 +155,8 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
 
 .langrow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:8px}
 .langrow select:disabled{opacity:.5}
+.chip.skip{text-decoration:line-through;text-decoration-color:var(--muted);opacity:.55}
+.chip.skip[aria-pressed="true"]{background:var(--sunk);color:var(--muted);border-color:var(--line)}
 .viewswitch{display:flex;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;align-self:flex-start;max-width:100%;flex-wrap:wrap}
 .viewswitch button{font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:7px;border:0;background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .viewswitch button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -247,6 +249,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
       <div class="field">
         <span class="label">Onde procurar</span>
         <div class="chips" id="sites" role="group" aria-label="Sites de vagas"></div>
+        <p class="hint skiphint" hidden>Sites riscados são pulados na busca porque trabalham num idioma que você não marcou em nível intermediário ou acima.</p>
       </div>
 
       <div class="actions">
@@ -267,6 +270,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
       <div class="field">
         <span class="label">Plataformas</span>
         <div class="chips" id="freelaSites" role="group" aria-label="Plataformas de freelance"></div>
+        <p class="hint skiphint" hidden>Plataformas riscadas são puladas porque trabalham num idioma que você não marcou em nível intermediário ou acima.</p>
       </div>
       <div class="field">
         <span class="label">Forma de pagamento</span>
@@ -317,6 +321,15 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
   const MODALIDADES = ["Remoto (trabalhando do Brasil)","Híbrido","Presencial","Presencial com visto/relocação"];
   const IDIOMAS = ["Inglês","Espanhol","Francês","Alemão","Italiano","Japonês","Mandarim","Coreano","Árabe","Russo","Português","Libras"];
   const NIVEIS = ["Básico","Intermediário","Avançado","Fluente","Nativo"];
+  // Idiomas em que cada site/plataforma funciona. Pulado se a pessoa não tem nenhum deles (português conta sempre).
+  const SITE_LANG = {
+    "Gupy":["Português"], "Vagas.com":["Português"], "InfoJobs":["Português"], "Catho":["Português"], "99Freelas":["Português"],
+    "Workana":["Português","Espanhol"],
+    "Remotive":["Inglês"], "Himalayas":["Inglês"], "We Work Remotely":["Inglês"], "Remote OK":["Inglês"], "Wellfound":["Inglês"], "Turing":["Inglês"], "Japan Dev / TokyoDev":["Inglês","Japonês"],
+    "Upwork":["Inglês"], "Freelancer.com":["Inglês"], "Contra":["Inglês"], "Guru":["Inglês"], "PeoplePerHour":["Inglês"],
+    "Malt":["Inglês","Francês","Alemão","Espanhol"]
+  };
+  const NIVEL_OK = ["Intermediário","Avançado","Fluente","Nativo"];
   const OLD_CONTRATO = { "Funcionário full-time": "CLT / funcionário full-time" };
   const CONTRATOS = ["CLT / funcionário full-time","Contractor / PJ (meu CNPJ)","Estágio"];
   const SITES = ["LinkedIn","Gupy","Vagas.com","InfoJobs","Catho","Glassdoor","Indeed","Remotive","Himalayas","We Work Remotely","Remote OK","Wellfound","Turing","Japan Dev / TokyoDev"];
@@ -356,6 +369,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
     renderChips("sites", SITES, "sites");
     renderChips("freelaSites", FREELA_SITES, "freelaSites");
     renderChips("freelaTipos", FREELA_TIPOS, "freelaTipos");
+    markSiteLangs();
   }
   $("#freelaMin").addEventListener("change", markDirty);
   $("#paisadd").addEventListener("click", addPais);
@@ -370,7 +384,20 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
     $("#idioma2").innerHTML = optList(["Nenhuma"].concat(IDIOMAS), b.idioma); $("#nivel2").innerHTML = optList(NIVEIS, b.nivel || "Básico");
     syncIdioma2();
   }
-  function syncIdioma2(){ const none = $("#idioma2").value === "Nenhuma"; $("#nivel2").disabled = none; }
+  function syncIdioma2(){ const none = $("#idioma2").value === "Nenhuma"; $("#nivel2").disabled = none; markSiteLangs(); }
+  function markSiteLangs(){
+    if(!$("#idioma1").value) return;
+    const tem = new Set(["Português"].concat(getIdiomas().filter(x => NIVEL_OK.includes(x.nivel)).map(x => x.idioma)));
+    ["sites","freelaSites"].forEach(id => {
+      let algum = false;
+      document.querySelectorAll("#" + id + " .chip").forEach(c => {
+        const req = SITE_LANG[c.dataset.v]; const skip = !!req && !req.some(l => tem.has(l));
+        c.classList.toggle("skip", skip); c.title = skip ? "Pulado: este site trabalha em " + req.join(" ou ").toLowerCase() : "";
+        if(skip) algum = true;
+      });
+      const h = document.getElementById(id).parentElement.querySelector(".skiphint"); if(h) h.hidden = !algum;
+    });
+  }
   function getIdiomas(){
     const out = [{ idioma: $("#idioma1").value, nivel: $("#nivel1").value }];
     if($("#idioma2").value !== "Nenhuma" && $("#idioma2").value !== $("#idioma1").value) out.push({ idioma: $("#idioma2").value, nivel: $("#nivel2").value });
