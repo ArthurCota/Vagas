@@ -9,7 +9,7 @@ Painel pessoal no Claude para quem mora no Brasil e procura trabalho aqui ou for
 - **Vagas CLT / PJ / estágio**: no Brasil ou fora, busca em LinkedIn, Gupy, Vagas.com, InfoJobs, Catho, Glassdoor, Indeed, Remotive, Himalayas, We Work Remotely, Remote OK, Wellfound, Turing e sites do Japão. Cada vaga ganha uma nota de 0 a 100, o motivo e o que falta no seu currículo.
 - **Projetos freelance**: busca em Upwork, Freelancer.com, Workana, Contra, Guru, PeoplePerHour, Malt e 99Freelas, com filtro de valor mínimo e de preço fixo ou por hora.
 - **Comparar currículo**: recalcula as notas das vagas que já estão no painel depois que você melhora o currículo, mostrando quanto cada uma subiu ou desceu.
-- **Revisão do currículo**: nota pelo padrão de currículos que passam em triagem no mercado escolhido (Brasil, exterior ou os dois), correções em ordem de prioridade, título do LinkedIn, resumo profissional e trechos reescritos.
+- **Revisão do currículo**: nota pelo padrão de currículos que passam em triagem no mercado escolhido (Brasil, exterior ou os dois), correções em ordem de prioridade, título do LinkedIn, resumo profissional e trechos reescritos. Um botão gera o currículo inteiro já com as correções, editável no painel, que você pode usar como seu currículo ou abrir como documento para baixar em PDF ou Word.
 - **Projeto para o GitHub**: uma ideia de projeto de portfólio que cobre as skills que mais aparecem nas vagas e ainda faltam no seu currículo.
 - **Busca automática**: roda de segunda a sexta às 7:43 e manda notificação no celular.
 

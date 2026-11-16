@@ -153,6 +153,12 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
 .projfoot .found{flex:1}
 .projfoot .msg{flex-basis:100%}
 
+.cvrev{border-top:1px solid var(--line);padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.cvrevhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px 16px;flex-wrap:wrap}
+.cvrevhead > div{min-width:0;flex:1 1 280px}
+.cvrev h4{margin:0 0 4px;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+#cvrevtext{min-height:420px;font-family:var(--f-mono);font-size:12.5px;line-height:1.55;background:var(--surface)}
+.cvrevacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .sugs{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
 .sughead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .sugacts{display:flex;gap:2px}
@@ -322,6 +328,24 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
       <details class="proj rv" id="rv" hidden>
         <summary><span class="score" id="rvscore" style="--p:0;--c:var(--muted)"><span id="rvnota"></span></span><span class="st"><span class="eb">Revisão do currículo · GitHub · LinkedIn</span><br><span class="tt" id="rvtitulo">Seu currículo para as vagas escolhidas</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
         <div class="projbody" id="rvbody"></div>
+        <div class="cvrev" id="cvrev">
+          <div class="cvrevhead">
+            <div><h4>Currículo com as correções aplicadas</h4><p class="hint" id="cvrevinfo">O Claude reescreve seu currículo seguindo esta revisão. Nada é inventado: onde falta um número seu, fica um [colchete] para você preencher.</p></div>
+            <button class="btn primary small" id="cvrevgen" type="button">Gerar currículo revisado</button>
+          </div>
+          <div id="cvrevwrap" hidden>
+            <textarea id="cvrevtext" spellcheck="true" aria-label="Currículo revisado (editável)"></textarea>
+            <p class="hint" id="cvrevgaps"></p>
+            <div class="cvrevacts">
+              <button class="btn small" id="cvrevsave" type="button">Salvar edição</button>
+              <button class="btn small" id="cvrevuse" type="button">Usar como meu currículo</button>
+              <button class="btn small" id="cvrevdoc" type="button" hidden>Abrir como documento</button>
+              <button class="btn ghost small" id="cvrevcopy" type="button">Copiar</button>
+              <button class="btn ghost small" id="cvrevstop" type="button" hidden>Parar</button>
+            </div>
+          </div>
+          <p class="msg" id="cvrevmsg"></p>
+        </div>
       </details>
       <div class="filters">
         <input type="text" id="q" placeholder="Filtrar por cargo, empresa, país…" aria-label="Filtrar vagas">
@@ -602,6 +626,87 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
   }
 
   // ---------- revisão ----------
+  // ---------- currículo revisado ----------
+  let cvrevCtl = null, cvrevDoc = null;
+  function contarLacunas(){
+    const n = ($("#cvrevtext").value.match(/\[[^\]\n]{1,80}\]/g) || []).length;
+    $("#cvrevgaps").textContent = n ? `Falta preencher ${n} trecho${n > 1 ? "s" : ""} entre [colchetes] com seus números reais antes de usar.` : "Nenhum [colchete] pendente.";
+    return n;
+  }
+  function showCvrev(texto, quando){
+    $("#cvrevwrap").hidden = false; $("#cvrevtext").value = texto; contarLacunas();
+    $("#cvrevgen").textContent = "Gerar de novo";
+    if(quando) $("#cvrevinfo").textContent = "Gerado em " + new Date(quando).toLocaleString("pt-BR", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }) + ". Você pode editar o texto aqui mesmo.";
+  }
+  $("#cvrevtext").addEventListener("input", contarLacunas);
+  async function salvarCvrev(msg){
+    try{ await st.db.doc("sistema/curriculoRevisado").set({ texto: $("#cvrevtext").value, geradoEm: (cvrevDoc && cvrevDoc.geradoEm) || new Date().toISOString(), editadoEm: new Date().toISOString() }); if(msg) setMsg("#cvrevmsg", msg, "ok"); return true; }
+    catch(e){ setMsg("#cvrevmsg", "Não consegui salvar agora. Tente de novo.", "err"); return false; }
+  }
+  $("#cvrevsave").addEventListener("click", () => salvarCvrev("Edição salva."));
+  $("#cvrevcopy").addEventListener("click", async () => { try{ await navigator.clipboard.writeText($("#cvrevtext").value); setMsg("#cvrevmsg", "Copiado.", "ok"); }catch(_){ $("#cvrevtext").select(); setMsg("#cvrevmsg", "Seu navegador bloqueou a cópia. O texto ficou selecionado: use Ctrl+C.", "err"); } });
+  $("#cvrevstop").addEventListener("click", () => { if(cvrevCtl) cvrevCtl.abort(); });
+  $("#cvrevuse").addEventListener("click", async () => {
+    const n = contarLacunas();
+    if(n && !$("#cvrevuse").dataset.confirm){ $("#cvrevuse").dataset.confirm = "1"; $("#cvrevuse").textContent = "Usar mesmo assim"; setMsg("#cvrevmsg", `Ainda há ${n} [colchete${n > 1 ? "s" : ""}] sem preencher. Clique de novo para usar assim mesmo.`, "err"); return; }
+    delete $("#cvrevuse").dataset.confirm; $("#cvrevuse").textContent = "Usar como meu currículo";
+    $("#cvtext").value = $("#cvrevtext").value; st.cvNome = "Currículo revisado (painel)"; showCv(); markDirty();
+    await salvarCvrev();
+    if(await salvar()) setMsg("#cvrevmsg", "Pronto, este agora é o seu currículo no painel. Clique em Comparar currículo com as vagas para ver as notas novas.", "ok");
+  });
+  $("#cvrevdoc").addEventListener("click", async () => {
+    const b = $("#cvrevdoc"); b.disabled = true;
+    try{
+      const md = $("#cvrevtext").value.trim();
+      if(new TextEncoder().encode(md).length >= 32000){ setMsg("#cvrevmsg", "O currículo está grande demais para virar documento. Encurte um pouco.", "err"); return; }
+      const mcp = await claude.use("mcp");
+      if(!mcp){ setMsg("#cvrevmsg", "Este modo de visualização não consegue criar documentos. Use Copiar.", "err"); return; }
+      setMsg("#cvrevmsg", "Criando o documento…", "");
+      const titulo = ((md.match(/^#\s+(.+)$/m) || [])[1] || "Currículo").replace(/[\u0000-\u001f]/g, " ").slice(0, 80) + " — Currículo";
+      const r = await mcp.callTool("Claude Docs", "batch", { container: { kind: "project", create: { name: titulo, doc: { markdown: md } } }, batch: [] }, { cache: false });
+      const url = r && r.payload && r.payload.url;
+      $("#cvrevmsg").className = "msg ok";
+      $("#cvrevmsg").innerHTML = url && /^https:\/\//.test(url) ? `Documento criado. <a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Abrir documento ↗</a> — de lá você baixa em PDF ou Word.` : "Documento criado. Ele está nos seus documentos do Claude, de onde você baixa em PDF ou Word.";
+    }catch(e){
+      const c = e && e.code;
+      if(c === "approval_required") setMsg("#cvrevmsg", "Criar o documento precisa da sua aprovação. Clique de novo e aceite o pedido do claude.ai.", "err");
+      else if(c === "tool_error" && e.result && e.result.structuredContent && e.result.structuredContent.created === false) setMsg("#cvrevmsg", "O documento não foi criado (" + String(e.result.structuredContent.reason || "motivo desconhecido") + ").", "err");
+      else if(c === "server_not_connected" || c === "not_in_manifest") setMsg("#cvrevmsg", "O Claude Docs não está liberado para este painel. Use Copiar.", "err");
+      else setMsg("#cvrevmsg", "Pode ser que o documento tenha sido criado mesmo assim. Confira seus documentos do Claude antes de clicar de novo.", "err");
+    }finally{ b.disabled = false; }
+  });
+  claude.use("mcp").then(m => { if(m) $("#cvrevdoc").hidden = false; });
+  $("#cvrevgen").addEventListener("click", async () => {
+    const sample = await claude.use("sample");
+    if(!sample){ setMsg("#cvrevmsg", "Este modo de visualização não consegue usar o Claude. Abra o painel no claude.ai.", "err"); return; }
+    const cv = $("#cvtext").value.trim();
+    if(cv.length < 80 || !st.revisao){ setMsg("#cvrevmsg", "Preciso do currículo salvo e de uma revisão pronta para gerar.", "err"); return; }
+    const r = st.revisao;
+    const paises = [...st.sel.paises]; const soBrasil = paises.length && paises.every(p => p === "Brasil");
+    const mercado = soBrasil ? "Brasil: escreva em português, até 2 páginas, padrão brasileiro, sem foto" : "internacional: escreva em inglês, 1 página se tiver menos de 5 anos de experiência, sem foto, idade ou estado civil, com cidade, país e fuso no cabeçalho";
+    const idiomas = ["Português (nativo)"].concat(getIdiomas().map(x => `${x.idioma} (${x.nivel})`));
+    const rv = { veredito: r.veredito, correcoes: r.correcoes, headline: r.headline, resumo: r.resumoIngles, reescritas: r.reescritas, estrutura: r.estrutura, fortes: r.fortes };
+    const prompt = `Reescreva o currículo abaixo aplicando a revisão que segue. Entregue o currículo COMPLETO e pronto, em Markdown.\n\nMercado: ${mercado}.\nCargos que a pessoa busca: ${cargosAtuais().join(", ")}.\nIdiomas declarados pela pessoa (use estes na seção de idiomas): ${idiomas.join(", ")}.\n${st.ghUser ? "GitHub: github.com/" + st.ghUser + "\n" : ""}${st.liUrl ? "LinkedIn: " + st.liUrl + "\n" : ""}\nRegras obrigatórias:\n- NÃO invente nada: nenhuma empresa, cargo, data, ferramenta, formação, certificação ou número que não esteja no currículo. Onde a revisão pede um número que a pessoa não deu, escreva um marcador entre colchetes, curto e claro, como [X horas por semana] ou [nº de dashboards].\n- Siga as correções, a estrutura, o título e o resumo sugeridos, e use as reescritas prontas da revisão nos trechos correspondentes.\n- Formato: primeira linha "# Nome"; logo abaixo uma linha de contato; depois seções com "## "; experiências com cargo, empresa, local e período numa linha e bullets com "- " começando por verbo no passado (no presente só no emprego atual). Uma coluna, sem tabelas, sem emojis, sem comentários seus antes ou depois.\n- Mantenha os dados de contato do currículo original.\n\nRevisão (JSON):\n${JSON.stringify(rv).slice(0, 14000)}\n\nCurrículo original:\n${cv.slice(0, 14000)}`;
+    const gen = $("#cvrevgen"); gen.disabled = true; $("#cvrevstop").hidden = false;
+    $("#cvrevwrap").hidden = false; $("#cvrevtext").value = ""; $("#cvrevtext").placeholder = "Pensando… isso leva de 20 segundos a 1 minuto.";
+    setMsg("#cvrevmsg", "Escrevendo o currículo revisado…", "");
+    cvrevCtl = new AbortController();
+    try{
+      const res = await sample(prompt, { signal: cvrevCtl.signal, cache: false, onText: ({ text }) => { $("#cvrevtext").value = text.replace(/^```(?:markdown|md)?\n?/i, ""); } });
+      let txt = res.text.trim().replace(/^```(?:markdown|md)?\n?/i, "").replace(/\n?```\s*$/, "").trim();
+      cvrevDoc = { geradoEm: new Date().toISOString() };
+      showCvrev(txt, cvrevDoc.geradoEm);
+      await salvarCvrev();
+      setMsg("#cvrevmsg", res.truncated ? "O texto saiu cortado no fim. Gere de novo ou complete à mão." : "Pronto. Revise o texto, preencha os [colchetes] e escolha o que fazer com ele.", res.truncated ? "err" : "ok");
+    }catch(e){
+      const c = e && e.code;
+      if(e && e.text) $("#cvrevtext").value = e.text;
+      const m = { cancelled: "Geração interrompida.", not_granted: "Você não permitiu o painel usar o Claude.", sampling_disabled: "O Claude não está disponível para esta conta.", rate_limited: "Muitos pedidos seguidos. Tente de novo daqui a pouco.", refused: "O Claude não conseguiu gerar este currículo. Tente ajustar a revisão.", session_expired: "Sua sessão expirou. Entre de novo no claude.ai." };
+      if(c === "refused") $("#cvrevtext").value = "";
+      setMsg("#cvrevmsg", m[c] || "Não consegui terminar. Tente de novo.", c === "cancelled" ? "" : "err");
+    }finally{ gen.disabled = false; $("#cvrevstop").hidden = true; contarLacunas(); }
+  });
+
   const copias = {};
   async function copiar(txt, msgSel){
     try{ await navigator.clipboard.writeText(txt); setMsg(msgSel, "Copiado.", "ok"); }
@@ -609,6 +714,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
   }
   const marca = s => esc(s).replace(/\[([^\]]+)\]/g, "<mark>[$1]</mark>");
   function renderRevisao(r){
+    st.revisao = r;
     const box = $("#rv");
     if(!r){ box.hidden = true; return; }
     box.hidden = false;
@@ -790,6 +896,7 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
     const user = await claude.use("user");
     if(user && !user.isOwner()){ st.readOnly = true; showNotice("Este painel é pessoal. Só o dono vê o currículo e as vagas."); }
     db.doc("config/perfil").onSnapshot(s => { if(s.exists){ const d = s.data(); st.ghUser = d.githubUsuario || ""; st.liUrl = d.linkedinUrl || ""; const gi = document.getElementById("ghuser"); if(gi && !gi.value) gi.value = st.ghUser; const li = document.getElementById("liurl"); if(li && st.liUrl && document.activeElement !== li) li.value = st.liUrl; if(!st.dirty){ preencher(d); st.loadedPerfil = true; } } }, () => {});
+    db.doc("sistema/curriculoRevisado").get().then(s => { if(s.exists){ const d = s.data(); cvrevDoc = d; if(d.texto) showCvrev(d.texto, d.editadoEm || d.geradoEm); } }).catch(() => {});
     db.doc("sistema/revisao").onSnapshot(s => renderRevisao(s.exists ? s.data() : null), () => {});
     db.collection("vagas").onSnapshot(s => { st.vagas = s.docs.map(d => Object.assign({ id: d.id }, d.data())); renderVagas(); }, () => showNotice("Parei de receber atualizações das vagas. Recarregue a página.", true));
     db.doc("sistema/execucao").onSnapshot(s => { st.exec = s.exists ? s.data() : null; renderRun(); renderVagas(); }, () => {});
