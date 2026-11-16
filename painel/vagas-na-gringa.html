@@ -153,6 +153,15 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
 .projfoot .found{flex:1}
 .projfoot .msg{flex-basis:100%}
 
+.sugs{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.sughead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.sugacts{display:flex;gap:2px}
+.chip.sug{border-style:dashed}
+.chip.sug::before{content:"+ ";color:var(--accent);font-weight:600}
+.chip.sug.added{border-style:solid;opacity:.5}
+.chip.sug.added::before{content:"✓ "}
+.chip .lg{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);margin-left:4px}
+#sugbtn{align-self:flex-start}
 .langrow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:8px}
 .langrow select:disabled{opacity:.5}
 .chip.skip{text-decoration:line-through;text-decoration-color:var(--muted);opacity:.55}
@@ -218,6 +227,15 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
         <label class="label" for="cargos">Cargos que você quer</label>
         <input type="text" id="cargos" value="Data Analyst, BI Analyst, Analytics Engineer, Data Engineer">
         <p class="hint">Separe por vírgula. Para vagas fora do Brasil, escreva também em inglês.</p>
+        <button class="btn small" id="sugbtn" type="button" hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+          Sugerir cargos parecidos</button>
+        <div class="sugs" id="sugs" hidden>
+          <div class="sughead"><span class="label">Sugestões pelo seu currículo</span><span class="sugacts"><button class="btn ghost small" id="sugall" type="button">Adicionar todos</button><button class="btn ghost small" id="sugclose" type="button" aria-label="Fechar sugestões">Fechar</button></span></div>
+          <div class="chips" id="suglist"></div>
+          <p class="hint" id="sugwhy">Toque num cargo para adicionar. Passe o mouse para ver o motivo.</p>
+        </div>
+        <p class="msg" id="sugmsg"></p>
       </div>
 
       <div class="field">
@@ -375,6 +393,44 @@ textarea:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-
   $("#paisadd").addEventListener("click", addPais);
   $("#paisnovo").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); addPais(); } });
   function addPais(){ const v = $("#paisnovo").value.trim(); if(!v) return; st.extraPaises.push(v); st.sel.paises.add(v); $("#paisnovo").value = ""; renderChips("paises", allPaises(), "paises"); markDirty(); }
+  // ---------- sugerir cargos ----------
+  let sugCtl = null, sugItems = [];
+  function cargosAtuais(){ return $("#cargos").value.split(",").map(s => s.trim()).filter(Boolean); }
+  function addCargo(c){
+    const atuais = cargosAtuais();
+    if(atuais.some(x => x.toLowerCase() === c.toLowerCase())) return false;
+    atuais.push(c); $("#cargos").value = atuais.join(", "); markDirty(); return true;
+  }
+  function renderSugs(){
+    const atuais = new Set(cargosAtuais().map(x => x.toLowerCase()));
+    $("#suglist").innerHTML = sugItems.map((s, i) => `<button type="button" class="chip sug${atuais.has(s.cargo.toLowerCase()) ? " added" : ""}" data-i="${i}" title="${esc(s.motivo || "")}">${esc(s.cargo)}${s.idioma ? `<span class="lg">${esc(s.idioma)}</span>` : ""}</button>`).join("");
+    $("#suglist").querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => { addCargo(sugItems[+b.dataset.i].cargo); renderSugs(); }));
+  }
+  $("#sugall").addEventListener("click", () => { sugItems.forEach(s => addCargo(s.cargo)); renderSugs(); setMsg("#sugmsg", "Cargos adicionados. Salve o perfil para usar na busca.", "ok"); });
+  $("#sugclose").addEventListener("click", () => { $("#sugs").hidden = true; });
+  $("#cargos").addEventListener("input", () => { if(!$("#sugs").hidden) renderSugs(); });
+  $("#sugbtn").addEventListener("click", async () => {
+    const sample = await claude.use("sample");
+    if(!sample){ $("#sugbtn").hidden = true; return; }
+    const cv = $("#cvtext").value.trim();
+    if(cv.length < 80){ setMsg("#sugmsg", "Suba o currículo primeiro para eu sugerir cargos.", "err"); return; }
+    const btn = $("#sugbtn"); btn.disabled = true; setMsg("#sugmsg", "Lendo seu currículo…", "");
+    if(sugCtl) sugCtl.abort(); sugCtl = new AbortController();
+    const idiomas = ["Português (nativo)"].concat(getIdiomas().filter(x => NIVEL_OK.includes(x.nivel)).map(x => `${x.idioma} (${x.nivel})`));
+    const prompt = `Você ajuda uma pessoa a buscar emprego. Com base no currículo abaixo, sugira de 8 a 12 TÍTULOS DE CARGO parecidos que ela pode buscar em sites de vagas e que ela ainda não listou.\n\nRegras:\n- Cargos que o currículo realmente sustenta (experiência, ferramentas, formação), no nível "${$("#senioridade").value}". Inclua variações de nome usadas pelo mercado e cargos vizinhos onde as mesmas habilidades valem.\n- Escreva cada cargo como ele aparece em anúncios reais, curto, sem nível (sem "Júnior", "Pleno").\n- Idiomas da pessoa: ${idiomas.join(", ")}. Países de interesse: ${[...st.sel.paises].join(", ")}. Dê cargos em português para vagas no Brasil e, só se ela tiver inglês ou outro idioma acima, também nesses idiomas.\n- Não repita nem traduza literalmente os que ela já tem: ${cargosAtuais().join(", ") || "(nenhum)"}.\n\nResponda só com um array JSON, por exemplo: [{"cargo":"Editor de Vídeo","idioma":"PT","motivo":"Frase curta em português ligando ao currículo"}]. idioma é a sigla do idioma do título (PT, EN, ES...).\n\nCurrículo:\n${cv.slice(0, 12000)}`;
+    try{
+      const out = await sample.json(prompt, { signal: sugCtl.signal, cache: false });
+      sugItems = (Array.isArray(out) ? out : []).filter(x => x && typeof x.cargo === "string" && x.cargo.trim()).map(x => ({ cargo: x.cargo.trim().slice(0, 80), idioma: String(x.idioma || "").slice(0, 4).toUpperCase(), motivo: String(x.motivo || "").slice(0, 240) })).slice(0, 14);
+      if(!sugItems.length){ setMsg("#sugmsg", "Não veio nenhuma sugestão. Tente de novo.", "err"); return; }
+      renderSugs(); $("#sugs").hidden = false; setMsg("#sugmsg", "", "");
+    }catch(e){
+      const m = { not_granted: "Você não permitiu o painel usar o Claude. As sugestões ficam desligadas.", sampling_disabled: "O Claude não está disponível para esta conta.", rate_limited: "Muitos pedidos seguidos. Tente de novo daqui a pouco.", invalid_json: "A resposta veio num formato estranho. Tente de novo.", session_expired: "Sua sessão expirou. Entre de novo no claude.ai.", cancelled: "" };
+      if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(e && e.code)) btn.hidden = true;
+      setMsg("#sugmsg", e && e.code in m ? m[e.code] : "Não consegui sugerir agora. Tente de novo.", e && e.code === "cancelled" ? "" : "err");
+    }finally{ btn.disabled = false; }
+  });
+  claude.use("sample").then(s => { if(s) $("#sugbtn").hidden = false; });
+
   // ---------- idiomas ----------
   const optList = (arr, sel) => arr.map(o => `<option${o === sel ? " selected" : ""}>${esc(o)}</option>`).join("");
   function setIdiomas(list){

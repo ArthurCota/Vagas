@@ -4,6 +4,7 @@ Painel pessoal no Claude para quem mora no Brasil e procura trabalho aqui ou for
 
 ## O que ele faz
 
+- **Sugerir cargos**: um botão lê seu currículo e sugere títulos de cargo parecidos que você ainda não listou, cada um com o motivo. Você adiciona os que quiser com um toque.
 - **Idiomas**: escolha até dois idiomas além do português, cada um com seu nível (o segundo pode ser "Nenhuma"). A nota de cada vaga considera os idiomas que ela pede.
 - **Vagas CLT / PJ / estágio**: no Brasil ou fora, busca em LinkedIn, Gupy, Vagas.com, InfoJobs, Catho, Glassdoor, Indeed, Remotive, Himalayas, We Work Remotely, Remote OK, Wellfound, Turing e sites do Japão. Cada vaga ganha uma nota de 0 a 100, o motivo e o que falta no seu currículo.
 - **Projetos freelance**: busca em Upwork, Freelancer.com, Workana, Contra, Guru, PeoplePerHour, Malt e 99Freelas, com filtro de valor mínimo e de preço fixo ou por hora.

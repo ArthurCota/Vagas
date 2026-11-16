@@ -15,7 +15,8 @@ Quero instalar o painel "Vagas na Gringa" na minha conta. Anexei dois arquivos: 
    - capabilities exatamente assim:
      {"db": {"rules": [{"path": "", "read": "owner", "write": "owner"}]},
       "user": {},
-      "mcp": {"servers": [{"server": "Claude Code Remote", "tools": ["fire_trigger"]}]}}
+      "mcp": {"servers": [{"server": "Claude Code Remote", "tools": ["fire_trigger"]}]},
+      "sample": {}}
    Se o conector "Claude Code Remote" tiver outro nome de exibição na minha conta, use o nome certo e me avise.
 
 3. Crie uma tarefa agendada chamada "Busca de vagas na gringa", de segunda a sexta às 7:43 no horário de São Paulo (CRON_TZ=America/Sao_Paulo 43 7 * * 1-5), com notificação push. O prompt da tarefa é todo o texto do TAREFA.md que vem depois da linha "---", trocando cada {{URL_DO_PAINEL}} pelo link do artifact que você acabou de publicar.
